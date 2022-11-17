@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">mas-assignment</string>
+    <string name="download_files">[1] Download files</string>
 </resources>
