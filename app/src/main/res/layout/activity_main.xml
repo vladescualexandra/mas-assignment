@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:id="@+id/ll_main">
 
 
     <Button
@@ -31,4 +32,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/_4_display_image"/>
+
+    <ImageView
+        android:id="@+id/iv_image"
+        android:layout_width="1000px"
+        android:layout_height="1000px"
+        />
 </LinearLayout>

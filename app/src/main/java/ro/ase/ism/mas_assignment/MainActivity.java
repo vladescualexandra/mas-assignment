@@ -2,23 +2,17 @@ package ro.ase.ism.mas_assignment;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -27,18 +21,13 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
-import javax.crypto.ShortBufferException;
 import javax.crypto.spec.SecretKeySpec;
 
 import ro.ase.ism.mas_assignment.async.HttpManager;
 
 public class MainActivity extends AppCompatActivity {
-
 
     private final String AES_IV_encrypted_with_RSA_PrivateKey = "AES_IV_encrypted_with_RSA_PrivateKey";
     private final String AES_Key_encrypted_with_RSA_PrivateKey = "AES_Key_encrypted_with_RSA_PrivateKey";
@@ -47,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
     byte[] AES_KEY;
     byte[] AES_IV;
+    byte[] IMAGE_BYTES;
 
     Button btnDownload;
     Button btnDecryptAES;
@@ -67,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
         configureDownload();
         configureDecryptAES();
         configureDecryptImage();
+        configureDecryptImage();
+        configureDisplayImage();
     }
 
     private void initializeContentsMap() {
@@ -76,7 +68,6 @@ public class MainActivity extends AppCompatActivity {
         CONTENTS.put(Image_encrypted_with_AES, null);
         CONTENTS.put(RSA_PublicKey, null);
     }
-
 
     private void configureDownload() {
         btnDownload = findViewById(R.id.btn_download);
@@ -100,12 +91,24 @@ public class MainActivity extends AppCompatActivity {
             String key = CONTENTS.get(RSA_PublicKey);
             String content = CONTENTS.get(AES_Key_encrypted_with_RSA_PrivateKey);
 
-            AES_KEY = decryptRSA(key, content);
-            Log.d("AES_KEY", toHex(AES_KEY));
+            if (CONTENTS.get(RSA_PublicKey) == null
+                    || CONTENTS.get(AES_Key_encrypted_with_RSA_PrivateKey) == null
+                    || CONTENTS.get(AES_IV_encrypted_with_RSA_PrivateKey) == null) {
+                Toast.makeText(getApplicationContext(),
+                                "Files not downloaded. Please use button [1] DOWNLOAD FILES.",
+                                Toast.LENGTH_SHORT)
+                        .show();
+            } else {
+                AES_KEY = decryptRSA(key, content);
+                assert AES_KEY != null;
+                Log.d("AES_KEY", toHex(AES_KEY));
 
-            content = CONTENTS.get(AES_IV_encrypted_with_RSA_PrivateKey);
-            AES_IV = decryptRSA(key, content);
-            Log.d("AES_IV", toHex(AES_IV));
+                content = CONTENTS.get(AES_IV_encrypted_with_RSA_PrivateKey);
+                AES_IV = decryptRSA(key, content);
+                assert AES_IV != null;
+                Log.d("AES_IV", toHex(AES_IV));
+            }
+
         });
     }
 
@@ -130,27 +133,57 @@ public class MainActivity extends AppCompatActivity {
     private void configureDecryptImage() {
         btnDecryptImage = findViewById(R.id.btn_decrypt_image);
         btnDecryptImage.setOnClickListener(view -> {
-            String content = CONTENTS.get(Image_encrypted_with_AES);
 
-            int keySize = 32;
-            byte[] aesKey = new byte[32];
-            for (int i=0; i<keySize; i++) {
-                aesKey[i] = AES_KEY[AES_KEY.length - i - 1];
-            }
+            if (CONTENTS.get(Image_encrypted_with_AES) == null) {
+                Toast.makeText(getApplicationContext(),
+                                "Files not downloaded. Please use button [1] DOWNLOAD FILES.",
+                                Toast.LENGTH_SHORT)
+                        .show();
+            } else {
 
-            try {
-                SecretKey key = new SecretKeySpec(aesKey, "AES");
-                Cipher aes = Cipher.getInstance("AES/ECB/NoPadding");
-                aes.init(Cipher.DECRYPT_MODE, key);
+                String content = CONTENTS.get(Image_encrypted_with_AES);
 
-                byte[] result = aes.doFinal(content.getBytes(StandardCharsets.UTF_8));
-                Log.d("Decrypted Image", toHex(result));
-            } catch (Exception e) {
-                e.printStackTrace();
+                if (AES_KEY == null) {
+                    Toast.makeText(getApplicationContext(),
+                                    "AES SECRET not available. Please use button [2] DECRYPT AES SECRET AND IV.",
+                                    Toast.LENGTH_SHORT)
+                            .show();
+                } else {
+                    int keySize = 32;
+                    byte[] aesKey = new byte[32];
+                    for (int i = 0; i < keySize; i++) {
+                        aesKey[i] = AES_KEY[AES_KEY.length - i - 1];
+                    }
+
+                    try {
+                        SecretKey key = new SecretKeySpec(aesKey, "AES");
+                        Cipher aes = Cipher.getInstance("AES/ECB/NoPadding");
+                        aes.init(Cipher.DECRYPT_MODE, key);
+
+                        IMAGE_BYTES = aes.doFinal(content.getBytes(StandardCharsets.UTF_8));
+                        Log.d("Decrypted Image", toHex(IMAGE_BYTES));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         });
+    }
 
-
+    private void configureDisplayImage() {
+        if (IMAGE_BYTES == null) {
+            Toast.makeText(getApplicationContext(),
+                            "Image not decrypted. Please use button [3] DECRYPT IMAGE.",
+                            Toast.LENGTH_SHORT)
+                    .show();
+        } else {
+            btnDisplayImage = findViewById(R.id.btn_display_image);
+            btnDisplayImage.setOnClickListener(view -> {
+                Bitmap bitmap = BitmapFactory.decodeByteArray(IMAGE_BYTES, 0, IMAGE_BYTES.length);
+                ImageView ivImage = findViewById(R.id.iv_image);
+                ivImage.setImageBitmap(bitmap);
+            });
+        }
     }
 
     @Override
