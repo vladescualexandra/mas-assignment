@@ -56,7 +56,12 @@ public class HttpManager implements Runnable {
             }
         }
         new Handler(getMainLooper()).post(() ->
-                MainActivity.CONTENTS.replace(FILE_NAME, String.valueOf(result)));
+                {
+                    MainActivity.CONTENTS.replace(FILE_NAME, String.valueOf(result));
+                    Log.d(FILE_NAME, MainActivity.CONTENTS.get(FILE_NAME));
+
+                }
+        );
 
     }
 }

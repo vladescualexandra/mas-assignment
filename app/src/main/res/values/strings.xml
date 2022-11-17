@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">mas-assignment</string>
-    <string name="download_files">[1] Download files</string>
+    <string name="_1_download_files">[1] Download files</string>
+    <string name="_2_decrypt_aes_secret_and_iv">[2] Decrypt AES Secret and IV</string>
 </resources>

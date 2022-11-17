@@ -12,5 +12,11 @@
         android:id="@+id/btn_download"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/download_files"/>
+        android:text="@string/_1_download_files"/>
+
+    <Button
+        android:id="@+id/btn_decrypt_aes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/_2_decrypt_aes_secret_and_iv"/>
 </LinearLayout>

@@ -4,13 +4,32 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
+import java.io.BufferedInputStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 import ro.ase.ism.mas_assignment.async.HttpManager;
 
@@ -22,7 +41,11 @@ public class MainActivity extends AppCompatActivity {
     private final String Image_encrypted_with_AES = "Image_encrypted_with_AES";
     private final String RSA_PublicKey = "RSA_PublicKey";
 
+    byte[] AES_KEY;
+    byte[] AES_IV;
+
     Button btnDownload;
+    Button btnDecryptAES;
     ExecutorService executorService;
 
     public static Map<String, String> CONTENTS;
@@ -32,11 +55,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        initializeContentsMap();
-        btnDownload = findViewById(R.id.btn_download);
-        initializeControls();
-
         executorService = Executors.newFixedThreadPool(4);
+
+        initializeContentsMap();
+        configureDownload();
+        configureDecryptAES();
+
     }
 
     private void initializeContentsMap() {
@@ -47,9 +71,10 @@ public class MainActivity extends AppCompatActivity {
         CONTENTS.put(RSA_PublicKey, null);
     }
 
-    private void initializeControls() {
-        btnDownload.setOnClickListener(view -> {
 
+    private void configureDownload() {
+        btnDownload = findViewById(R.id.btn_download);
+        btnDownload.setOnClickListener(view -> {
             ArrayList<Thread> threads = new ArrayList<>();
             for (String key : CONTENTS.keySet()) {
                 Thread thread = new Thread(new HttpManager(MainActivity.this, key));
@@ -59,28 +84,56 @@ public class MainActivity extends AppCompatActivity {
             for (Thread thread : threads) {
                 thread.start();
             }
-
-            try {
-                for (Thread thread : threads) {
-                    thread.join();
-                }
-
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                for (String key : CONTENTS.keySet()) {
-                    if (CONTENTS.get(key) != null) {
-                        Log.d(key, CONTENTS.get(key));
-                    }
-                }
-            }
         });
+    }
 
+    private void configureDecryptAES() {
+        btnDecryptAES = findViewById(R.id.btn_decrypt_aes);
+        btnDecryptAES.setOnClickListener(view -> {
+
+            String key = CONTENTS.get(RSA_PublicKey);
+            String content = CONTENTS.get(AES_Key_encrypted_with_RSA_PrivateKey);
+
+            AES_KEY = decryptRSA(key, content);
+            Log.d("AES_KEY", toHex(AES_KEY));
+
+            content = CONTENTS.get(AES_IV_encrypted_with_RSA_PrivateKey);
+            AES_IV = decryptRSA(key, content);
+            Log.d("AES_IV", toHex(AES_IV));
+        });
+    }
+
+    public static byte[] decryptRSA(String key, String input) {
+        try {
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(Base64.getDecoder().decode(key));
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            PublicKey publicKey = keyFactory.generatePublic(spec);
+
+            byte[] textToDecrypt = Base64.getDecoder().decode(input.getBytes());
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.DECRYPT_MODE, publicKey);
+            cipher.update(textToDecrypt);
+            return cipher.doFinal();
+
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException |
+                IllegalBlockSizeException | BadPaddingException |
+                InvalidKeyException | InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
     protected void onPause() {
         executorService.shutdown();
         super.onPause();
+    }
+
+    public static String toHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02X ", b));
+        }
+        return sb.toString();
     }
 }
