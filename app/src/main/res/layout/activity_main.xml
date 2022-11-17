@@ -19,4 +19,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/_2_decrypt_aes_secret_and_iv"/>
+
+    <Button
+        android:id="@+id/btn_decrypt_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/_3_decrypt_image"/>
+
+    <Button
+        android:id="@+id/btn_display_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/_4_display_image"/>
 </LinearLayout>

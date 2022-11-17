@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +31,9 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.ShortBufferException;
+import javax.crypto.spec.SecretKeySpec;
 
 import ro.ase.ism.mas_assignment.async.HttpManager;
 
@@ -46,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
 
     Button btnDownload;
     Button btnDecryptAES;
+    Button btnDecryptImage;
+    Button btnDisplayImage;
     ExecutorService executorService;
 
     public static Map<String, String> CONTENTS;
@@ -60,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
         initializeContentsMap();
         configureDownload();
         configureDecryptAES();
-
+        configureDecryptImage();
     }
 
     private void initializeContentsMap() {
@@ -115,12 +121,36 @@ public class MainActivity extends AppCompatActivity {
             cipher.update(textToDecrypt);
             return cipher.doFinal();
 
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException |
-                IllegalBlockSizeException | BadPaddingException |
-                InvalidKeyException | InvalidKeySpecException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private void configureDecryptImage() {
+        btnDecryptImage = findViewById(R.id.btn_decrypt_image);
+        btnDecryptImage.setOnClickListener(view -> {
+            String content = CONTENTS.get(Image_encrypted_with_AES);
+
+            int keySize = 32;
+            byte[] aesKey = new byte[32];
+            for (int i=0; i<keySize; i++) {
+                aesKey[i] = AES_KEY[AES_KEY.length - i - 1];
+            }
+
+            try {
+                SecretKey key = new SecretKeySpec(aesKey, "AES");
+                Cipher aes = Cipher.getInstance("AES/ECB/NoPadding");
+                aes.init(Cipher.DECRYPT_MODE, key);
+
+                byte[] result = aes.doFinal(content.getBytes(StandardCharsets.UTF_8));
+                Log.d("Decrypted Image", toHex(result));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+
     }
 
     @Override

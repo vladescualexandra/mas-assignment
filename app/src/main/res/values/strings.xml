@@ -2,4 +2,6 @@
     <string name="app_name">mas-assignment</string>
     <string name="_1_download_files">[1] Download files</string>
     <string name="_2_decrypt_aes_secret_and_iv">[2] Decrypt AES Secret and IV</string>
+    <string name="_3_decrypt_image">[3] Decrypt image</string>
+    <string name="_4_display_image">[4] Display image</string>
 </resources>
